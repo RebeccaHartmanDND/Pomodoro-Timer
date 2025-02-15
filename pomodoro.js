@@ -16,17 +16,18 @@ client.connect().catch(console.error);
 const twitchChannel = 'Username_Here'; // Replace with your actual channel name
 
 
+
 // Load Pomodoro settings (fixed values set by !pomostart)
 let pomoSettings = JSON.parse(localStorage.getItem('pomoSettings')) || {
-    pomoTime: 25 * 60, // Default 25 minutes
-    breakTime: 5 * 60, // Default 5 minutes
+    pomoTime: 25 * 60,
+    breakTime: 5 * 60,
 };
 
 // Load Pomodoro session data (tracks the current session)
 let pomoData = JSON.parse(localStorage.getItem('pomoData')) || {
-    goal: 5, // Default pomo goal
+    goal: 5,
     current: 1,
-    isPomoActive: true, // true for pomo, false for break
+    isPomoActive: true,
     timerInterval: null,
     isPaused: false,
 };
@@ -53,7 +54,8 @@ function initializeTimer() {
 
 initializeTimer();
 
-// Start Pomodoro timer
+
+
 function startTimer() {
     if (pomoData.timerInterval) return; // Prevent multiple intervals
 
@@ -77,15 +79,19 @@ function startTimer() {
                 if (pomoData.goal !== "?" && pomoData.current >= pomoData.goal) {
                     stopTimer();
                     client.say(twitchChannel, `Pomodoro goal of ${pomoData.goal} reached! Timer stopped.`);
+                    
+                    // Update the timer text display to "All Done"
+                    document.getElementById('timerText').innerText = "All Done"; 
                     return;
                 }
-
+            
                 pomoData.isPomoActive = true;
                 pomoSettings.pomoTime = JSON.parse(localStorage.getItem('pomoSettings')).pomoTime; // Reset pomo time
                 pomoData.current++;
                 playDingSound();
                 updateTimerDisplay();
-            } else {
+            }
+            else {
                 pomoSettings.breakTime--;
                 updateTimerDisplay();
             }
@@ -94,6 +100,7 @@ function startTimer() {
         localStorage.setItem('pomoData', JSON.stringify(pomoData));
     }, 1000);
 }
+
 
 function stopTimer() {
     clearInterval(pomoData.timerInterval);
@@ -106,15 +113,17 @@ function updateTimerDisplay() {
     document.getElementById('timerText').innerText = `${pomoText} ${pomoData.current}/${pomoData.goal} | ${formatTime(timeLeft)}`;
 }
 
+
+
 client.on('message', (channel, userstate, message, self) => {
     if (self) return;
 
     const command = message.split(' ')[0].toLowerCase();
     const args = message.split(' ').slice(1);
     const username = userstate.username;
-
+    
     // Check if the user is a Moderator or Broadcaster
-    const isModOrBroadcaster = userstate.mod || userstate.badges && userstate.badges.broadcaster;
+    const isModOrBroadcaster = userstate.mod || (userstate.badges && userstate.badges.broadcaster);
 
     if (command === '!pomogoal' && args[0]) {
         if (!isModOrBroadcaster) {
@@ -122,13 +131,8 @@ client.on('message', (channel, userstate, message, self) => {
             return;
         }
 
-        if (args[0] === "?") {
-            pomoData.goal = "?";  // Set the goal to "?"
-            client.say(channel, "Pomodoro goal set to unlimited (indefinite timer).");
-        } else {
-            pomoData.goal = parseInt(args[0], 10);
-            client.say(channel, `Pomo goal set to ${pomoData.goal}`);
-        }
+        pomoData.goal = parseInt(args[0], 10);
+        client.say(channel, `Pomo goal set to ${pomoData.goal}`);
         localStorage.setItem('pomoData', JSON.stringify(pomoData));
         updateTimerDisplay();
     } else if (command === '!pomostart' && args.length === 2) {
@@ -194,10 +198,12 @@ client.on('message', (channel, userstate, message, self) => {
 
         localStorage.removeItem('pomoSettings');
         localStorage.removeItem('pomoData');
+        localStorage.removeItem('userTasks');
         stopTimer();
         pomoSettings = { pomoTime: 25 * 60, breakTime: 5 * 60 };
         pomoData = { goal: 5, current: 1, isPomoActive: true, timerInterval: null, isPaused: false };
-        client.say(channel, 'Pomodoro settings cleared and reset.');
+        userTasks = {};
+        client.say(channel, 'Pomodoro settings and tasks cleared and reset.');
         updateTimerDisplay();
     }
 });
